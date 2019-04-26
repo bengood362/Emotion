@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from keras.models import load_model
+import tensorflow.keras as keras
+from tensorflow.keras.models import load_model
 from statistics import mode
 from utils.datasets import get_labels
 from utils.inference import detect_faces
@@ -9,6 +10,10 @@ from utils.inference import draw_bounding_box
 from utils.inference import apply_offsets
 from utils.inference import load_detection_model
 from utils.preprocessor import preprocess_input
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import requests
+import time
 
 USE_WEBCAM = True # If false, loads video file source
 
@@ -33,26 +38,40 @@ emotion_window = []
 # starting video streaming
 
 cv2.namedWindow('window_frame')
-video_capture = cv2.VideoCapture(0)
+# video_capture = cv2.VideoCapture(0)
 
 # Select video or webcam feed
 cap = None
-if (USE_WEBCAM == True):
-    cap = cv2.VideoCapture(0) # Webcam source
-else:
-    cap = cv2.VideoCapture('./demo/dinner.mp4') # Video file source
+#if (USE_WEBCAM == True):
+#    cap = cv2.VideoCapture(0) # Webcam source
+#else:
+#    cap = cv2.VideoCapture('./demo/dinner.mp4') # Video file source
+camera = PiCamera()
+camera.resolution = (640, 480)
+camera.framerate = 32
+rawCapture = PiRGBArray(camera, size=(640, 480))
+time.sleep(0.1)
 
-while cap.isOpened(): # True:
-    ret, bgr_image = cap.read()
-
+session = requests.session()
+cnt=0
+# while cap.isOpened(): # True:
+emotion_text = 'happy'
+for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+    cnt+=1;
+    # print(frame)
+    stream = frame.array
+    # print(stream)
+    # ret, bgr_image = cap.read()
+    bgr_image = stream
+    rawCapture.truncate(0)
     #bgr_image = video_capture.read()[1]
 
     gray_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
     rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
 
     faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5,
-			minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
-
+            minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
+    
     for face_coordinates in faces:
 
         x1, x2, y1, y2 = apply_offsets(face_coordinates, emotion_offsets)
@@ -98,8 +117,16 @@ while cap.isOpened(): # True:
 
     bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
     cv2.imshow('window_frame', bgr_image)
+    if(cnt == 10):
+        try:
+            session.get('http://0.0.0.0:8080/update_emotion?emotion={}'.format(emotion_text))
+        except Exception as e:
+            print('Error: update emotion could not be made')
+            print(e)
+        cnt = 0
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
+#cap.release()
+camera.close()
 cv2.destroyAllWindows()

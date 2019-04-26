@@ -1,10 +1,10 @@
 import cv2
 import h5py
-import keras
-import keras.backend as K
-from keras.layers.core import Lambda
-from keras.models import Sequential
-from keras.models import load_model
+import tensorflow.keras
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers.core import Lambda
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import load_model
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
