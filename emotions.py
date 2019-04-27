@@ -114,12 +114,13 @@ time.sleep(0.1)
 
 session = requests.session()
 cnt=0
+emocnt=0
 fcnt = 0
 last_cnt = -1
 # while cap.isOpened(): # True:
 emotion_text = 'happy'
 for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-    cnt+=1;
+    emocnt+=1;
     # print(frame)
     stream = frame.array
     # print(stream)
@@ -183,13 +184,13 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
     bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
     cv2.rectangle(bgr_image, (int(cap_region_x_begin * bgr_image.shape[1]), 0), (bgr_image.shape[1], int(cap_region_y_end * bgr_image.shape[0])), (255, 0, 0), 2)
     cv2.imshow('window_frame', bgr_image)
-    if(cnt == 10):
+    if(emocnt == 10):
         try:
             session.get('http://0.0.0.0:8080/update_emotion?emotion={}'.format(emotion_text))
         except Exception as e:
             print('Error: update emotion could not be made')
             print(e)
-        cnt = 0
+        emocnt = 0
     # End emotion recognition
     
     
